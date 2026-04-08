@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CineScope — Khám phá phim</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="grain"></div>
+
+  <header class="site-header">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">CineScope</span>
+    </div>
+    <div class="header-meta">
+      <span id="total-badge">16 phim</span>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Chuyển giao diện">
+        <span class="theme-icon-dark">☀</span>
+        <span class="theme-icon-light">☽</span>
+        <span class="theme-label-dark">Sáng</span>
+        <span class="theme-label-light">Tối</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MODAL -->
+  <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+      <button id="modal-close" class="modal-close" aria-label="Đóng">✕</button>
+      <div class="modal-poster" id="modal-poster">
+        <span id="modal-emoji" class="modal-emoji"></span>
+        <div class="modal-poster-meta">
+          <span id="modal-rating-badge" class="modal-rating-badge"></span>
+          <span id="modal-year-badge" class="modal-year-badge"></span>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-tags" id="modal-tags"></div>
+        <h2 class="modal-title" id="modal-title"></h2>
+        <p class="modal-desc" id="modal-desc"></p>
+        <div class="modal-meta-grid" id="modal-meta-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+      <div class="sidebar-section">
+        <label class="section-label">TÌM KIẾM</label>
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 20 20" fill="none">
+            <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="search-input" placeholder="Tên phim..." autocomplete="off" />
+          <button id="clear-search" class="clear-btn" aria-label="Xóa tìm kiếm">×</button>
+        </div>
+        <p class="debounce-note">⚡ Debounce 400ms</p>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-header">
+          <label class="section-label">THỂ LOẠI</label>
+          <button id="clear-genres" class="link-btn">Bỏ chọn</button>
+        </div>
+        <div id="genre-list" class="genre-list"></div>
+      </div>
+
+      <div class="sidebar-section active-filter-section" id="active-filter-section" style="display:none">
+        <label class="section-label">BỘ LỌC HIỆN TẠI</label>
+        <div id="active-filter-display" class="active-filter-display"></div>
+      </div>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+
+      <div class="content-header">
+        <h1 class="content-title">Tất cả phim</h1>
+        <span id="result-count" class="result-count"></span>
+      </div>
+
+      <div id="movie-grid" class="movie-grid"></div>
+
+      <div id="empty-state" class="empty-state" style="display:none">
+        <div class="empty-icon">◎</div>
+        <p class="empty-title">Không tìm thấy phim</p>
+        <p class="empty-sub">Thử thay đổi từ khóa hoặc thể loại</p>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
