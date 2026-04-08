@@ -1,0 +1,172 @@
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Ứng dụng tìm kiếm và lọc phim theo thể loại với debounce</h2>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.app{display:flex;gap:0;min-height:500px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.sidebar{width:220px;min-width:220px;background:var(--color-background-secondary);border-right:0.5px solid var(--color-border-tertiary);padding:16px;display:flex;flex-direction:column;gap:16px}
+.sidebar h3{font-size:13px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.05em}
+#search-input{width:100%;padding:8px 10px;font-size:14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);outline:none}
+#search-input:focus{box-shadow:0 0 0 2px rgba(99,102,241,0.2)}
+.genre-list{display:flex;flex-direction:column;gap:6px}
+.genre-item{display:flex;align-items:center;gap:8px;cursor:pointer}
+.genre-item input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#6366f1}
+.genre-item label{font-size:14px;color:var(--color-text-primary);cursor:pointer;user-select:none}
+.main{flex:1;padding:16px;background:var(--color-background-primary)}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.top-bar h2{font-size:16px;font-weight:500;color:var(--color-text-primary)}
+#result-count{font-size:13px;color:var(--color-text-secondary)}
+.movie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.movie-card{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;transition:border-color 0.15s}
+.movie-card:hover{border-color:var(--color-border-primary)}
+.movie-poster{width:100%;height:90px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--color-background-tertiary)}
+.movie-info{padding:10px}
+.movie-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px;line-height:1.3}
+.movie-year{font-size:11px;color:var(--color-text-secondary);margin-bottom:6px}
+.genre-tags{display:flex;flex-wrap:wrap;gap:4px}
+.genre-tag{font-size:10px;padding:2px 6px;border-radius:20px;background:#EEEDFE;color:#3C3489;font-weight:500}
+.empty-state{grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--color-text-secondary);font-size:14px}
+.debounce-hint{font-size:11px;color:var(--color-text-tertiary);margin-top:-8px}
+.clear-btn{font-size:12px;padding:4px 8px;cursor:pointer;background:transparent;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);color:var(--color-text-secondary)}
+.clear-btn:hover{background:var(--color-background-secondary)}
+</style>
+
+<div class="app">
+  <aside class="sidebar">
+    <div>
+      <h3 style="margin-bottom:8px">Tìm kiếm</h3>
+      <input type="text" id="search-input" placeholder="Nhập tên phim...">
+      <p class="debounce-hint" style="margin-top:4px">Debounce 400ms</p>
+    </div>
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h3>Thể loại</h3>
+        <button class="clear-btn" onclick="clearFilters()">Xóa lọc</button>
+      </div>
+      <div class="genre-list" id="genre-list"></div>
+    </div>
+    <div id="active-filters" style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;margin-top:auto"></div>
+  </aside>
+
+  <main class="main">
+    <div class="top-bar">
+      <h2>Danh sách phim</h2>
+      <span id="result-count"></span>
+    </div>
+    <div class="movie-grid" id="movie-grid"></div>
+  </main>
+</div>
+
+<script>
+const movies = [
+  {id:1, title:"Avengers: Endgame", year:2019, genres:["Hành động","Khoa học viễn tưởng"], emoji:"🦸"},
+  {id:2, title:"Titanic", year:1997, genres:["Tình cảm","Chính kịch"], emoji:"🚢"},
+  {id:3, title:"The Dark Knight", year:2008, genres:["Hành động","Tội phạm"], emoji:"🦇"},
+  {id:4, title:"Inception", year:2010, genres:["Khoa học viễn tưởng","Hồi hộp"], emoji:"🌀"},
+  {id:5, title:"Toy Story", year:1995, genres:["Hoạt hình","Gia đình"], emoji:"🤠"},
+  {id:6, title:"Interstellar", year:2014, genres:["Khoa học viễn tưởng","Chính kịch"], emoji:"🌌"},
+  {id:7, title:"The Godfather", year:1972, genres:["Tội phạm","Chính kịch"], emoji:"🕴️"},
+  {id:8, title:"Forrest Gump", year:1994, genres:["Chính kịch","Tình cảm"], emoji:"🏃"},
+  {id:9, title:"Joker", year:2019, genres:["Tội phạm","Hồi hộp"], emoji:"🃏"},
+  {id:10, title:"Frozen", year:2013, genres:["Hoạt hình","Gia đình","Nhạc kịch"], emoji:"❄️"},
+  {id:11, title:"Mad Max: Fury Road", year:2015, genres:["Hành động","Khoa học viễn tưởng"], emoji:"💥"},
+  {id:12, title:"La La Land", year:2016, genres:["Tình cảm","Nhạc kịch"], emoji:"🎵"},
+  {id:13, title:"John Wick", year:2014, genres:["Hành động","Tội phạm"], emoji:"🔫"},
+  {id:14, title:"Up", year:2009, genres:["Hoạt hình","Gia đình","Chính kịch"], emoji:"🎈"},
+  {id:15, title:"Tenet", year:2020, genres:["Hành động","Khoa học viễn tưởng","Hồi hộp"], emoji:"⏳"},
+  {id:16, title:"Parasite", year:2019, genres:["Hồi hộp","Chính kịch"], emoji:"🏠"},
+];
+
+// Tự động phát hiện các thể loại từ dữ liệu (không hard-code)
+const allGenres = [...new Set(movies.flatMap(m => m.genres))].sort();
+
+let selectedGenres = new Set();
+let searchKeyword = "";
+let debounceTimer = null;
+
+// Tạo danh sách checkbox thể loại động
+function renderGenreCheckboxes() {
+  const list = document.getElementById("genre-list");
+  list.innerHTML = "";
+  allGenres.forEach(genre => {
+    const item = document.createElement("div");
+    item.className = "genre-item";
+    item.innerHTML = `
+      <input type="checkbox" id="g-${genre}" value="${genre}">
+      <label for="g-${genre}">${genre}</label>
+    `;
+    item.querySelector("input").addEventListener("change", handleGenreChange);
+    list.appendChild(item);
+  });
+}
+
+function handleGenreChange(e) {
+  if (e.target.checked) selectedGenres.add(e.target.value);
+  else selectedGenres.delete(e.target.value);
+  applyFilters();
+}
+
+// Debounce: chỉ thực thi sau khi người dùng ngừng gõ 400ms
+function handleSearchInput(e) {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    searchKeyword = e.target.value.trim().toLowerCase();
+    applyFilters();
+  }, 400);
+}
+
+// Tích hợp đồng thời: lọc theo thể loại VÀ từ khóa
+function applyFilters() {
+  const filtered = movies.filter(movie => {
+    const matchGenre = selectedGenres.size === 0 ||
+      movie.genres.some(g => selectedGenres.has(g));
+    const matchSearch = searchKeyword === "" ||
+      movie.title.toLowerCase().includes(searchKeyword);
+    return matchGenre && matchSearch;
+  });
+  renderMovies(filtered);
+  updateActiveFiltersHint();
+}
+
+function renderMovies(list) {
+  const grid = document.getElementById("movie-grid");
+  const count = document.getElementById("result-count");
+  count.textContent = `${list.length} / ${movies.length} phim`;
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="empty-state">Không tìm thấy phim phù hợp 🎬<br><span style="font-size:12px">Thử thay đổi bộ lọc</span></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(m => `
+    <div class="movie-card">
+      <div class="movie-poster">${m.emoji}</div>
+      <div class="movie-info">
+        <div class="movie-title">${m.title}</div>
+        <div class="movie-year">${m.year}</div>
+        <div class="genre-tags">${m.genres.map(g => `<span class="genre-tag">${g}</span>`).join("")}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function updateActiveFiltersHint() {
+  const el = document.getElementById("active-filters");
+  const parts = [];
+  if (selectedGenres.size > 0) parts.push(`Thể loại: ${[...selectedGenres].join(", ")}`);
+  if (searchKeyword) parts.push(`Từ khóa: "${searchKeyword}"`);
+  el.textContent = parts.length ? "Đang lọc:\n" + parts.join("\n") : "";
+}
+
+function clearFilters() {
+  selectedGenres.clear();
+  searchKeyword = "";
+  document.getElementById("search-input").value = "";
+  document.querySelectorAll(".genre-item input").forEach(cb => cb.checked = false);
+  applyFilters();
+}
+
+document.getElementById("search-input").addEventListener("input", handleSearchInput);
+
+renderGenreCheckboxes();
+applyFilters();
+</script>
